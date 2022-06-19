@@ -7,45 +7,76 @@ function Addsong() {
     const [newSong, setSong] = useState("");
     const [newYear, setYear] = useState("");
     const [artistList, setArtistList] = useState([]); // to bind dropdown
-    const [newRating, setRating] = useState();
-    const [newArtists, setArtists] = useState();
+    const [newRating, setRating] = useState("");
+    const [newArtists, setArtists] = useState(); // to send backend
+
 
     useEffect(() => {
         getArtist();
         }, []
         );
     
-    
 
+    // get the list of artist for dropdown
     const getArtist = () => {
         Axios.get("http://localhost:9000/artist")
             .then(res =>  { 
                 setArtistList(
-                    res.data.data.map( (val) => ([
-                     val.name
-                    ])
+                    res.data.data.map( (val) => ({
+                        id : val.id,
+                        name : val.name
+                    }
+                    )
                 )
                 );
                 console.log(res.data.data);
-        });
+            })
     }    
 
-    const handleSubmit = () => {
-        Axios.post("http://localhost:9000/song" , {
-                song : newSong,
-                year : newYear,
-                artists : newArtists,
+    //post the song details to backend
+
+    var artist_dropdown = [];
+
+    for (var i=0; i<artistList.length;i++){
+        artist_dropdown.push(artistList[i].name);
+    }
+
+    const handleSubmit = async (e) => {
+            //e.preventDefault();
+            let response = await Axios.post("http://localhost:9000/song" , {
+                    song : newSong,
+                    year : newYear,
+                    artists : newArtists,
+            })
+           
+
+            console.log(response.data);
+
+            for (var i = 0; i<artistList.length;i++){
+                if(newArtists[0] === artistList[i].name)
+                {
+                 var id = artistList[i].id;
+                }
+            }
+
+            let response2 = await Axios.post("http://localhost:9000/rating", {
+                song_id : response.id, // id property of response from first post call
                 rating : newRating
             })
-            .then(res => {
-                console.log(res.status);
+
+            console.log("rating_response"+response2);
+
+            let response3 = await Axios.post("http://localhost:9000/asmapping", {
+                song_id : response.id, // ifd property of response from first post call
+                artist_id : id
             })
 
+            console.log(response3);
     }
 
     return (
         <form className="Form">
-            <div className="label">
+            
                 <label>
                     Enter Song
                 </label>
@@ -54,9 +85,6 @@ function Addsong() {
                     onChange={(e) => setSong(e.target.value)}
                     label="Song Name"
                 />
-            </div>
-            
-            <div className="label">
                 <label>
                     Enter Year
                 </label>
@@ -65,9 +93,6 @@ function Addsong() {
                     onChange={(e) => setYear(e.target.value)}
                     label="Year"
                 />
-            </div>
-
-            <div className="label">
                 <label>
                     Enter Rating
                 </label>
@@ -76,8 +101,6 @@ function Addsong() {
                     onChange={(e) => setRating(e.target.value)}
                     label="Rating"
                 />
-            </div>
-
 
             <div className="multiSelect">
 
@@ -89,7 +112,7 @@ function Addsong() {
                     onSelect={(event) => {
                     setArtists(event)
                     }}
-                    options={artistList}
+                    options={artist_dropdown}
                     showCheckbox
                 />
             </div>
